@@ -85,14 +85,14 @@ int vfs_fstat(unsigned int fd, struct kstat *stat)
 	}
 	return error;
 }
-EXPORT_SYMBOL(vfs_fstat);
+EXPORT_SYMBOL(vfs_statx_fd);
 
 int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
 		int flag)
 {
 	struct path path;
 	int error = -EINVAL;
-	unsigned int lookup_flags = 0;
+	unsigned int lookup_flags = LOOKUP_FOLLOW | LOOKUP_AUTOMOUNT;
 
 	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT |
 		      AT_EMPTY_PATH)) != 0)
