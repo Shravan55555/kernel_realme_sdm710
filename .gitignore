@@ -69,6 +69,7 @@ Module.symvers
 !.gitignore
 !.mailmap
 !.cocciconfig
+!.gitmodules
 
 #
 # Generated include files
@@ -123,3 +124,6 @@ kernel/configs/android-*.cfg
 #Ignoring Android.bp link file
 #
 Android.bp
+
+# Ignore out folder
+/out/
