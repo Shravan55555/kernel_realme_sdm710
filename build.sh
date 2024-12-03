@@ -2,7 +2,7 @@
 
 echo -e "*****************************"
 echo -e "**                         **"
-echo -e "** Building Etude-KSU...   **"
+echo -e "** Building BloodMoon-KSU...   **"
 echo -e "**                         **"
 echo -e "*****************************"
 
@@ -12,14 +12,14 @@ export LLVM=1
 curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
 
 # Clang
-echo "Using Prelude-Clang"
-git clone -b master https://gitlab.com/jjpprrrr/prelude-clang.git --depth=1 clang
+echo "Using Proton-Clang"
+git clone -b master https://github.com/kdrag0n/proton-clang.git --depth=1 clang
 
 # Some general variables
-KERNELNAME="Etude-Op.13-No.2-KSU"
+KERNELNAME="BloodMoon-KSU"
 ARCH="arm64"
 SUBARCH="arm64"
-DEFCONFIG=beryllium_defconfig
+DEFCONFIG=sdm670-perf_defconfig
 #DEFCONFIG=beryllium_defconfig
 COMPILER=clang
 LINKER=""
@@ -27,7 +27,7 @@ KERNEL_DIR="$(pwd)"
 COMPILERDIR="${KERNEL_DIR}/clang"
 
 # Export shits
-export KBUILD_BUILD_USER=Legendleo90
+export KBUILD_BUILD_USER=Shravan
 export KBUILD_BUILD_HOST=ArchX
 
 # Select LTO variant ( Full LTO by default )
@@ -39,13 +39,13 @@ IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
 
 # Clone AnyKernel
 echo "Cloning AnyKernel3"
-git clone --depth=1 https://github.com/Legendleo90/AnyKernel3.git -b etude AnyKernel3
+git clone --depth=1 https://github.com/shravansayz/AnyKernel3.git -b master AnyKernel3
 
 # Create Logs
 exec 2> >(tee -a out/error.log >&2)
 
 # Specify Final Zip Name
-ZIPNAME=Etude-KSU-beryllium
+ZIPNAME=BloodMoon-KSU-RMX1901
 FINAL_ZIP=${ZIPNAME}-${DEVICE}.zip
 
 # Speed up build process
@@ -83,7 +83,7 @@ OBJCOPY=llvm-objcopy \
 OBJDUMP=llvm-objdump \
 STRIP=llvm-strip \
 ld-name=${LINKER} \
-KBUILD_COMPILER_STRING="Prelude Clang"
+KBUILD_COMPILER_STRING="Proton Clang"
 }
 
 # Make defconfig
