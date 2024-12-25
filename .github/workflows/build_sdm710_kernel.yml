@@ -60,5 +60,3 @@ jobs:
       with:
         name: RMX1901-BloodMoon-KernelSU-${{ steps.version.outputs.VER }}-${{ steps.get_time.outputs.TIME }}
         path: "AnyKernel3/*"
-
-   
