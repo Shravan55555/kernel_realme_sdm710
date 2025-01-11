@@ -4,14 +4,14 @@ updates:
     directory: /
     schedule:
       interval: daily
-    target-branch: next-susfs
+    target-branch: testttt
   - package-ecosystem: gitsubmodule
     directory: /
     schedule:
       interval: daily
-    target-branch: next-susfs
+    target-branch: testtt
   - package-ecosystem: gitsubmodule
     directory: /
     schedule:
       interval: daily
-    target-branch: ksu-next
+    target-branch: 14-ksu
