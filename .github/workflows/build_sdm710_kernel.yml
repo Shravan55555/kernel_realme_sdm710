@@ -54,10 +54,12 @@ jobs:
         export PATH=$(pwd)/clang/bin/:$PATH
         export ARCH=arm64
         export SUBARCH=arm64
-        make $KERNEL_CMDLINE $KERNEL_DEFCONFIG CC="ccache clang"
         
-        # Build with KernelSU enabled
-        make $KERNEL_CMDLINE CC="ccache clang" KBUILD_EXTRA_SYMBOLS="$(pwd)/KernelSU-Next/KernelSU/Module.symvers" -j$(nproc --all)
+        # Configure kernel with KernelSU
+        echo "CONFIG_KSU=y" >> arch/arm64/configs/${KERNEL_DEFCONFIG}
+        
+        make $KERNEL_CMDLINE $KERNEL_DEFCONFIG CC="ccache clang"
+        make $KERNEL_CMDLINE CC="ccache clang" -j$(nproc --all)
         cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3-KSU/
     
     - name: Upload KernelSU Kernel
@@ -79,15 +81,12 @@ jobs:
         export ARCH=arm64
         export SUBARCH=arm64
         
-        # Temporarily rename or move KernelSU directory to disable it
-        mv KernelSU-Next KernelSU-Next-disabled
+        # Configure kernel without KernelSU
+        sed -i 's/CONFIG_KSU=y/CONFIG_KSU=n/' arch/arm64/configs/${KERNEL_DEFCONFIG}
         
         make $KERNEL_CMDLINE $KERNEL_DEFCONFIG CC="ccache clang"
         make $KERNEL_CMDLINE CC="ccache clang" -j$(nproc --all)
         cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3-NonKSU/
-        
-        # Restore the KernelSU directory
-        mv KernelSU-Next-disabled KernelSU-Next
     
     - name: Upload Non-KernelSU Kernel
       uses: actions/upload-artifact@v4.6.0
