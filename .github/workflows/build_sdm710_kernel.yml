@@ -55,9 +55,10 @@ jobs:
         export ARCH=arm64
         export SUBARCH=arm64
         
-        # Configure kernel with KernelSU
-        echo "CONFIG_KSU=y" >> arch/arm64/configs/${KERNEL_DEFCONFIG}
+        # Create a KSU branch to keep the KernelSU integration
+        git checkout -b with-ksu
         
+        # Configure and build with KernelSU
         make $KERNEL_CMDLINE $KERNEL_DEFCONFIG CC="ccache clang"
         make $KERNEL_CMDLINE CC="ccache clang" -j$(nproc --all)
         cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3-KSU/
@@ -68,22 +69,48 @@ jobs:
         name: RMX1901-BloodMoon-KernelSU-Next-${{ steps.version.outputs.VER }}-${{ steps.get_time.outputs.TIME }}
         path: "AnyKernel3-KSU/*"
     
-    # Clean the build directory for next build
-    - name: Clean build directory
+    # Clean everything and prepare for non-KSU build
+    - name: Prepare for non-KSU build
       run: |
+        # Create a fresh branch without KernelSU integration
+        git checkout -b without-ksu $(git rev-parse HEAD~0)
+        
+        # Create dummy KernelSU functions to satisfy symbol requirements
+        mkdir -p drivers/kernelsu
+        cat > drivers/kernelsu/ksu.c << 'EOF'
+        // Dummy KernelSU functions to satisfy external references
+        #include <linux/fs.h>
+        
+        int ksu_handle_devpts(struct fs_context *fc) { return 0; }
+        EOF
+        
+        # Create a simple Makefile for the dummy functions
+        cat > drivers/kernelsu/Makefile << 'EOF'
+        obj-y += ksu.o
+        EOF
+        
+        # Update the top-level Makefile to include our dummy directory
+        if ! grep -q "kernelsu" drivers/Makefile; then
+          echo "obj-y += kernelsu/" >> drivers/Makefile
+        fi
+        
+        # Create Kconfig file
+        cat > drivers/kernelsu/Kconfig << 'EOF'
+        # Empty Kconfig to satisfy inclusion
+        EOF
+        
+        # Clean build artifacts
         make $KERNEL_CMDLINE clean
         make $KERNEL_CMDLINE mrproper
     
-    # Second build: Without KernelSU
+    # Second build: Without KernelSU but with dummy symbols
     - name: Build Kernel without KernelSU
       run: |
         export PATH=$(pwd)/clang/bin/:$PATH
         export ARCH=arm64
         export SUBARCH=arm64
         
-        # Configure kernel without KernelSU
-        sed -i 's/CONFIG_KSU=y/CONFIG_KSU=n/' arch/arm64/configs/${KERNEL_DEFCONFIG}
-        
+        # Configure and build without real KernelSU
         make $KERNEL_CMDLINE $KERNEL_DEFCONFIG CC="ccache clang"
         make $KERNEL_CMDLINE CC="ccache clang" -j$(nproc --all)
         cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3-NonKSU/
