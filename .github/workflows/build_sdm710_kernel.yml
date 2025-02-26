@@ -1,6 +1,5 @@
-name: Build RMX1901-Kernel
+name: Build RMX1901-Kernel (KSU & Non-KSU)
 on: [push, pull_request, workflow_dispatch]
-
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -19,21 +18,22 @@ jobs:
       with:
         submodules: 'true'
         fetch-depth: 0
-
+    
     - name: Set up ccache
       uses: hendrikmuhs/ccache-action@v1.2.16
-
+    
     - name: Install dependencies
       id: version
       run: |
         sudo apt-get update -y 
         sudo apt install gcc-aarch64-linux-gnu -y
         sudo apt install gcc-arm-linux-gnueabi -y
-        sudo apt install binutils make python3 libssl-dev build-essential bc  bison flex zip unzip libssl-dev ca-certificates xz-utils mkbootimg cpio device-tree-compiler git git-lfs -y
+        sudo apt install binutils make python3 libssl-dev build-essential bc bison flex zip unzip libssl-dev ca-certificates xz-utils mkbootimg cpio device-tree-compiler git git-lfs -y
         git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
-        git clone https://github.com/shravansayz/AnyKernel3 -b master --depth=1
-        rm -rf AnyKernel3/.git
-        rm -rf AnyKernel3/.github
+        git clone https://github.com/shravansayz/AnyKernel3 -b master --depth=1 AnyKernel3-KSU
+        git clone https://github.com/shravansayz/AnyKernel3 -b master --depth=1 AnyKernel3-NonKSU
+        rm -rf AnyKernel3-KSU/.git AnyKernel3-KSU/.github
+        rm -rf AnyKernel3-NonKSU/.git AnyKernel3-NonKSU/.github
         git submodule sync
         git submodule update --init --recursive
         cd $GITHUB_WORKSPACE/KernelSU-Next
@@ -48,17 +48,49 @@ jobs:
       run: |
         echo "TIME=$(TZ=UTC-8 date +%m%d%H%M )" >> $GITHUB_OUTPUT
     
-    - name: Build Kernel
+    # First build: With KernelSU
+    - name: Build Kernel with KernelSU
       run: |
-       export PATH=$(pwd)/clang/bin/:$PATH
-       export ARCH=arm64
-       export SUBARCH=arm64
-       make $KERNEL_CMDLINE $KERNEL_DEFCONFIG CC="ccache clang"
-       make $KERNEL_CMDLINE CC="ccache clang" -j$(nproc --all)
-       cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3
+        export PATH=$(pwd)/clang/bin/:$PATH
+        export ARCH=arm64
+        export SUBARCH=arm64
+        make $KERNEL_CMDLINE $KERNEL_DEFCONFIG CC="ccache clang"
+        
+        # Build with KernelSU enabled
+        make $KERNEL_CMDLINE CC="ccache clang" KBUILD_EXTRA_SYMBOLS="$(pwd)/KernelSU-Next/KernelSU/Module.symvers" -j$(nproc --all)
+        cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3-KSU/
     
-    - name: Upload Kernel
+    - name: Upload KernelSU Kernel
       uses: actions/upload-artifact@v4.6.0
       with:
         name: RMX1901-BloodMoon-KernelSU-Next-${{ steps.version.outputs.VER }}-${{ steps.get_time.outputs.TIME }}
-        path: "AnyKernel3/*"
+        path: "AnyKernel3-KSU/*"
+    
+    # Clean the build directory for next build
+    - name: Clean build directory
+      run: |
+        make $KERNEL_CMDLINE clean
+        make $KERNEL_CMDLINE mrproper
+    
+    # Second build: Without KernelSU
+    - name: Build Kernel without KernelSU
+      run: |
+        export PATH=$(pwd)/clang/bin/:$PATH
+        export ARCH=arm64
+        export SUBARCH=arm64
+        
+        # Temporarily rename or move KernelSU directory to disable it
+        mv KernelSU-Next KernelSU-Next-disabled
+        
+        make $KERNEL_CMDLINE $KERNEL_DEFCONFIG CC="ccache clang"
+        make $KERNEL_CMDLINE CC="ccache clang" -j$(nproc --all)
+        cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3-NonKSU/
+        
+        # Restore the KernelSU directory
+        mv KernelSU-Next-disabled KernelSU-Next
+    
+    - name: Upload Non-KernelSU Kernel
+      uses: actions/upload-artifact@v4.6.0
+      with:
+        name: RMX1901-BloodMoon-NonKSU-${{ steps.version.outputs.VER }}-${{ steps.get_time.outputs.TIME }}
+        path: "AnyKernel3-NonKSU/*"
