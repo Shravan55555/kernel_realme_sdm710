@@ -73,7 +73,7 @@ jobs:
     - name: Prepare for non-KSU build
       run: |
         # Create a fresh branch without KernelSU integration
-        git checkout -b without-ksu $(git rev-parse HEAD~0)
+        git checkout -b wipp $(git rev-parse HEAD~0)
         
         # Create dummy KernelSU functions to satisfy symbol requirements
         mkdir -p drivers/kernelsu
